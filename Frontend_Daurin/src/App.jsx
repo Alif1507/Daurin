@@ -5,6 +5,7 @@ import Hero from './Landing/Hero'
 import About from './Landing/About'
 import IdentifikasiSampah from './Landing/IdentifikasiSampah'
 import AyoEdukasi from './Landing/AyoEdukasi'
+import R3 from './Landing/R3'
 
 const App = () => {
   return (
@@ -14,6 +15,7 @@ const App = () => {
       <About />
       <IdentifikasiSampah />
       <AyoEdukasi />
+      <R3 />
     </main>
   )
 }
