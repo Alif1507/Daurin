@@ -1,13 +1,18 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required
-from services.assistant_service import suggest_product
+from services.assistant_service import suggest_product, load_history
 
 assistant_bp = Blueprint("assistant", __name__)
 
 @assistant_bp.post("/suggest")
-@jwt_required()
 def suggest():
-    data = request.json
+    data = request.get_json(silent=True) or {}
     trash_items = data.get("trash_items", "")
-    result = suggest_product(trash_items)
+    variant = data.get("variant")  # optional: "A" or "B"
+    result = suggest_product(trash_items, requested_variant=variant)
     return jsonify(result)
+
+
+@assistant_bp.get("/history")
+def history():
+    limit = request.args.get("limit", 20, type=int)
+    return jsonify(load_history(limit))

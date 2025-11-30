@@ -17,5 +17,11 @@ def detect_trash():
     path = os.path.join(upload_folder, filename)
     file.save(path)
 
-    trash_type = classifier.predict(path)
-    return jsonify({"trash_type": trash_type})
+    result = classifier.predict(path)
+    primary = result.get("primary", {})
+    return jsonify({
+        "trash_type": primary.get("label"),
+        "confidence": primary.get("confidence"),
+        "reason": primary.get("reason"),
+        "top": result.get("top", [])
+    })

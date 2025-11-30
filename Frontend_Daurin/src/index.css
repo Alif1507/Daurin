@@ -3,3 +3,74 @@
 @theme {
   --font-poppins: "Poppins", serif;
 }
+
+:root {
+  --bg-color: #FFFFFF;
+  --text-color: #000000;
+  --button-color: #00796D;
+  --button-color-text: #FFFFFF;
+  --text-title: #22311D;
+}
+
+[data-theme="dark"] {
+  --bg-color: #005048;
+  --text-color: #FFFFFF;
+  --button-color: #FFFFFF;
+  --button-color-text: #00796D;
+  --text-title: #FFFFFF;
+}
+
+body{
+  background-color: var(--bg-color);
+}
+
+.cardR3 {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+.cardR3:hover {
+  background-color: var(--button-color);
+  color: var(--button-color-text);
+}
+
+.toggleText {
+ color: var(--text-color); 
+}
+
+.toggleTextButton {
+ color: var(--button-color-text); 
+}
+
+.toggleButton {
+  background-color: var(--button-color);
+}
+
+.toggleBg {
+  background-color: var(--bg-color);
+}
+
+.toggleTextTitle {
+  color: var(--text-title);
+}
+
+* {
+  box-sizing: border-box;
+}
+/* 
+body {
+  margin: 0;
+  font-family: var(--font-poppins);
+  background: radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08), transparent 25%),
+    radial-gradient(circle at 80% 0%, rgba(94, 234, 212, 0.06), transparent 20%),
+    #020617;
+  color: #e2e8f0;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.5);
+  border-radius: 999px;
+} */

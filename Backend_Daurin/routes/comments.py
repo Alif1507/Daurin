@@ -16,7 +16,14 @@ def add_comment():
     )
     db.session.add(comment)
     db.session.commit()
-    return jsonify({"id": comment.id}), 201
+    return jsonify({
+        "id": comment.id,
+        "content": comment.content,
+        "post_id": comment.post_id,
+        "user_id": comment.user_id,
+        "username": comment.author.username if comment.author else "Unknown",
+        "created_at": comment.created_at.isoformat()
+    }), 201
 
 @comments_bp.get("/<int:post_id>")
 def list_comments(post_id):
@@ -26,6 +33,18 @@ def list_comments(post_id):
             "id": c.id,
             "content": c.content,
             "user_id": c.user_id,
+            "username": c.author.username if c.author else "Unknown",
             "created_at": c.created_at.isoformat()
         } for c in comments
     ])
+
+@comments_bp.delete("/<int:comment_id>")
+@jwt_required()
+def delete_comment(comment_id):
+    user_id = get_jwt_identity()
+    comment = Comment.query.get_or_404(comment_id)
+    if comment.user_id != user_id:
+        return jsonify({"message": "Forbidden"}), 403
+    db.session.delete(comment)
+    db.session.commit()
+    return jsonify({"message": "Deleted"})

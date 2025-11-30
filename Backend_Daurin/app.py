@@ -1,4 +1,9 @@
-from flask import Flask
+import os
+try:
+    from dotenv import load_dotenv  # type: ignore
+except ImportError:
+    load_dotenv = None
+from flask import Flask, send_from_directory
 from flask_cors import CORS
 from models import db
 from extensions import jwt
@@ -10,10 +15,13 @@ from routes.ml import ml_bp
 from routes.assistant import assistant_bp
 
 def create_app():
+    if load_dotenv:
+        load_dotenv()
     app = Flask(__name__)
+    basedir = os.path.abspath(os.path.dirname(__file__))
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
     app.config["JWT_SECRET_KEY"] = "super-secret-change-me"
-    app.config["UPLOAD_FOLDER"] = "uploads"
+    app.config["UPLOAD_FOLDER"] = os.path.join(basedir, "uploads")
 
     db.init_app(app)
     jwt.init_app(app)
@@ -25,6 +33,10 @@ def create_app():
     app.register_blueprint(likes_bp, url_prefix="/api/likes")
     app.register_blueprint(ml_bp, url_prefix="/api/ml")
     app.register_blueprint(assistant_bp, url_prefix="/api/assistant")
+
+    @app.route("/uploads/<path:filename>")
+    def uploaded_file(filename):
+        return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
     return app
 

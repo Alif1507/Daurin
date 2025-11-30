@@ -20,7 +20,7 @@ const Cube = () => {
 
 const Bumi3d = () => {
   return (
-    <section className="relative w-screen h-screen">
+    <section className="relative w-screen h-screen max-sm:hidden ">
       <Canvas>
         <directionalLight position={[0, 0, 2]} />
         <ambientLight />

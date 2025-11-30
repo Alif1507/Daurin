@@ -10,11 +10,13 @@ import GameAndQuiz from './Landing/GameAndQuiz'
 import LihatKarya from './Landing/LihatKarya'
 import AiBot from './Landing/AiBot'
 import Footer from './Landing/Footer'
+import HeroMobile from './Landing/HeroMobile'
 
 const App = () => {
   return (
     <main>
       <Navbar />
+      <HeroMobile />
       <Hero />
       <About />
       <IdentifikasiSampah />
