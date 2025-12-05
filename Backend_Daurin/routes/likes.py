@@ -7,7 +7,10 @@ likes_bp = Blueprint("likes", __name__)
 @likes_bp.post("/")
 @jwt_required()
 def like_post():
-    user_id = get_jwt_identity()
+    try:
+        user_id = int(get_jwt_identity())
+    except (TypeError, ValueError):
+        return jsonify({"message": "Invalid token"}), 401
     post_id = request.json["post_id"]
 
     like = Like.query.filter_by(user_id=user_id, post_id=post_id).first()
@@ -22,7 +25,10 @@ def like_post():
 @likes_bp.delete("/")
 @jwt_required()
 def unlike_post():
-    user_id = get_jwt_identity()
+    try:
+        user_id = int(get_jwt_identity())
+    except (TypeError, ValueError):
+        return jsonify({"message": "Invalid token"}), 401
     post_id = request.json["post_id"]
     like = Like.query.filter_by(user_id=user_id, post_id=post_id).first()
     if not like:

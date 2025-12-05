@@ -39,10 +39,23 @@ export const loginUser = (email, password) =>
     body: JSON.stringify({ email, password }),
   }).then(handleJson);
 
-export const listPosts = (token) =>
-  fetch(`${API_BASE}/posts/`, {
+export const updateProfile = (payload, token) =>
+  fetch(`${API_BASE}/auth/me`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...withAuth({}, token) },
+    body: JSON.stringify(payload),
+  }).then(handleJson);
+
+export const listPosts = (token, userId, page = 1, perPage = 6) => {
+  const params = new URLSearchParams();
+  if (userId) params.append("user_id", userId);
+  params.append("page", page);
+  params.append("per_page", perPage);
+  const qs = params.toString();
+  return fetch(`${API_BASE}/posts/${qs ? `?${qs}` : ""}`, {
     headers: withAuth({}, token),
   }).then(handleJson);
+};
 
 export const createPost = (caption, file, token) => {
   const formData = new FormData();
@@ -104,5 +117,33 @@ export const askAssistant = (trashItems, token, variant) => {
   }).then(handleJson);
 };
 
-export const fetchAssistantHistory = (limit = 20) =>
-  fetch(`${API_BASE}/assistant/history?limit=${limit}`).then(handleJson);
+export const fetchAssistantHistory = (limit = 20, token) =>
+  fetch(`${API_BASE}/assistant/history?limit=${limit}`, {
+    headers: withAuth({}, token),
+  }).then(handleJson);
+
+export const updateAssistantHistory = (payload, token) =>
+  fetch(`${API_BASE}/assistant/history`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...withAuth({}, token) },
+    body: JSON.stringify(payload),
+  }).then(handleJson);
+
+export const followUser = (userId, token) =>
+  fetch(`${API_BASE}/follows/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...withAuth({}, token) },
+    body: JSON.stringify({ user_id: userId }),
+  }).then(handleJson);
+
+export const unfollowUser = (userId, token) =>
+  fetch(`${API_BASE}/follows/`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json", ...withAuth({}, token) },
+    body: JSON.stringify({ user_id: userId }),
+  }).then(handleJson);
+
+export const fetchFollowStats = (userId, token) =>
+  fetch(`${API_BASE}/follows/stats?user_id=${userId}`, {
+    headers: withAuth({}, token),
+  }).then(handleJson);

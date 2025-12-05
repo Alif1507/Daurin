@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router'
 
 const AiBot = () => {
   return (
@@ -7,7 +8,9 @@ const AiBot = () => {
         Bingung Mau Buat Karya apa? Tanyakan pada Recy
       </h1>
 
+      <Link to='/recy'>
       <img src="/img/Recyc.png" className='w-[500px] h-[500px] hover:-rotate-6 hover:scale-105 transition-all duration-300' alt="" />
+      </Link>
     </section>
   )
 }

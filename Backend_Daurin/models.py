@@ -34,3 +34,10 @@ class Like(db.Model):
     post_id = db.Column(db.Integer, db.ForeignKey("post.id"), nullable=False)
     __table_args__ = (db.UniqueConstraint('user_id', 'post_id',
                                           name='unique_user_post_like'),)
+
+
+class Follow(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    follower_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    following_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    __table_args__ = (db.UniqueConstraint("follower_id", "following_id", name="uq_follow"),)

@@ -13,6 +13,7 @@ from routes.comments import comments_bp
 from routes.likes import likes_bp
 from routes.ml import ml_bp
 from routes.assistant import assistant_bp
+from routes.follows import follows_bp
 
 def create_app():
     if load_dotenv:
@@ -33,6 +34,7 @@ def create_app():
     app.register_blueprint(likes_bp, url_prefix="/api/likes")
     app.register_blueprint(ml_bp, url_prefix="/api/ml")
     app.register_blueprint(assistant_bp, url_prefix="/api/assistant")
+    app.register_blueprint(follows_bp, url_prefix="/api/follows")
 
     @app.route("/uploads/<path:filename>")
     def uploaded_file(filename):

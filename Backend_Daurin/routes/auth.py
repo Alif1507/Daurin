@@ -26,7 +26,7 @@ def login():
     if not user or not bcrypt.check_password_hash(user.password, data["password"]):
         return jsonify({"message": "Invalid credentials"}), 401
 
-    token = create_access_token(identity=user.id)
+    token = create_access_token(identity=str(user.id))
     return jsonify({"token": token, "user": {
         "id": user.id,
         "username": user.username,
@@ -37,7 +37,48 @@ def login():
 @jwt_required()
 def me():
     user_id = get_jwt_identity()
+    try:
+        user_id = int(user_id)
+    except (TypeError, ValueError):
+        return jsonify({"message": "Invalid token"}), 401
     user = User.query.get(user_id)
+    return jsonify({
+        "id": user.id,
+        "username": user.username,
+        "email": user.email
+    })
+
+
+@auth_bp.put("/me")
+@jwt_required()
+def update_me():
+    try:
+        user_id = int(get_jwt_identity())
+    except (TypeError, ValueError):
+        return jsonify({"message": "Invalid token"}), 401
+    user = User.query.get_or_404(user_id)
+    data = request.json or {}
+
+    new_username = data.get("username")
+    new_email = data.get("email")
+    new_password = data.get("password")
+
+    if new_username:
+        existing = User.query.filter(User.username == new_username, User.id != user_id).first()
+        if existing:
+            return jsonify({"message": "Username already taken"}), 400
+        user.username = new_username
+
+    if new_email:
+        existing = User.query.filter(User.email == new_email, User.id != user_id).first()
+        if existing:
+            return jsonify({"message": "Email already taken"}), 400
+        user.email = new_email
+
+    if new_password:
+        user.password = bcrypt.generate_password_hash(new_password).decode("utf-8")
+
+    db.session.commit()
     return jsonify({
         "id": user.id,
         "username": user.username,

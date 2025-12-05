@@ -8,7 +8,10 @@ comments_bp = Blueprint("comments", __name__)
 @jwt_required()
 def add_comment():
     data = request.json
-    user_id = get_jwt_identity()
+    try:
+        user_id = int(get_jwt_identity())
+    except (TypeError, ValueError):
+        return jsonify({"message": "Invalid token"}), 401
     comment = Comment(
         content=data["content"],
         post_id=data["post_id"],
@@ -41,7 +44,10 @@ def list_comments(post_id):
 @comments_bp.delete("/<int:comment_id>")
 @jwt_required()
 def delete_comment(comment_id):
-    user_id = get_jwt_identity()
+    try:
+        user_id = int(get_jwt_identity())
+    except (TypeError, ValueError):
+        return jsonify({"message": "Invalid token"}), 401
     comment = Comment.query.get_or_404(comment_id)
     if comment.user_id != user_id:
         return jsonify({"message": "Forbidden"}), 403

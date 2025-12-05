@@ -41,14 +41,27 @@ def remove_old_image(image_url):
 
 @posts_bp.get("/")
 def list_posts():
+    user_filter = request.args.get("user_id", type=int)
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 6, type=int)
     try:
         verify_jwt_in_request(optional=True)
         current_user_id = get_jwt_identity()
     except Exception:
         current_user_id = None
 
-    posts = Post.query.order_by(Post.created_at.desc()).all()
-    return jsonify([serialize_post(p, current_user_id) for p in posts])
+    query = Post.query
+    if user_filter:
+        query = query.filter_by(user_id=user_filter)
+    pagination = query.order_by(Post.created_at.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    posts = pagination.items
+    return jsonify({
+        "items": [serialize_post(p, current_user_id) for p in posts],
+        "page": page,
+        "per_page": per_page,
+        "total": pagination.total,
+        "pages": pagination.pages
+    })
 
 @posts_bp.get("/<int:post_id>")
 def get_post(post_id):
@@ -64,7 +77,10 @@ def get_post(post_id):
 @posts_bp.post("/")
 @jwt_required()
 def create_post():
-    user_id = get_jwt_identity()
+    try:
+        user_id = int(get_jwt_identity())
+    except (TypeError, ValueError):
+        return jsonify({"message": "Invalid token"}), 401
     caption = request.form.get("caption")
     file = request.files.get("image")
 
@@ -90,7 +106,10 @@ def create_post():
 @posts_bp.put("/<int:post_id>")
 @jwt_required()
 def update_post(post_id):
-    user_id = get_jwt_identity()
+    try:
+        user_id = int(get_jwt_identity())
+    except (TypeError, ValueError):
+        return jsonify({"message": "Invalid token"}), 401
     post = Post.query.get_or_404(post_id)
     if post.user_id != user_id:
         return jsonify({"message": "Forbidden"}), 403
@@ -115,7 +134,10 @@ def update_post(post_id):
 @posts_bp.delete("/<int:post_id>")
 @jwt_required()
 def delete_post(post_id):
-    user_id = get_jwt_identity()
+    try:
+        user_id = int(get_jwt_identity())
+    except (TypeError, ValueError):
+        return jsonify({"message": "Invalid token"}), 401
     post = Post.query.get_or_404(post_id)
     if post.user_id != user_id:
         return jsonify({"message": "Forbidden"}), 403

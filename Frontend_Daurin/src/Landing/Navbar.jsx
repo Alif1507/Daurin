@@ -2,10 +2,13 @@ import { FaArrowRightLong } from "react-icons/fa6";
 import { HiMenuAlt3, HiX } from "react-icons/hi";
 import { useTheme } from "../context/ThemeContext";
 import { useState } from "react";
+import { Link } from "react-router";
+import { useAuth } from "../context/AuthContext";
 
 const Navbar = () => {
   const { theme } = useTheme();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user } = useAuth();
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
@@ -55,9 +58,19 @@ const Navbar = () => {
         </div>
 
         <div className="hidden lg:block">
-          <button className="rounded-xl rounded-r-3xl toggleButton toggleTextButton bg-[#00796D] px-4 py-2 text-white flex items-center gap-3 shadow-md hover:bg-[#019887] transition">
-            Signin <FaArrowRightLong />
-          </button>
+          {user ? (
+            <Link to="/dashboard">
+              <button className="rounded-xl cursor-pointer hover:scale-105 duration-150 rounded-r-3xl toggleButton toggleTextButton bg-[#00796D] px-4 py-2 text-white flex items-center gap-3 shadow-md hover:bg-[#019887] transition">
+                Dashboard <FaArrowRightLong />
+              </button>
+            </Link>
+          ) : (
+            <Link to="/login">
+              <button className="rounded-xl cursor-pointer hover:scale-105 duration-150 rounded-r-3xl toggleButton toggleTextButton bg-[#00796D] px-4 py-2 text-white flex items-center gap-3 shadow-md hover:bg-[#019887] transition">
+                Login <FaArrowRightLong />
+              </button>
+            </Link>
+          )}
         </div>
 
         <button
@@ -121,9 +134,19 @@ const Navbar = () => {
                 </a>
               </li>
             </ul>
-            <button className="w-full rounded-xl rounded-r-3xl toggleButton toggleTextButton bg-[#00796D] px-4 py-3 text-white flex items-center justify-center gap-3 shadow-md hover:bg-[#019887] transition">
-              Signin <FaArrowRightLong />
-            </button>
+            {user ? (
+              <Link to="/">
+                <button className="w-full rounded-xl rounded-r-3xl toggleButton toggleTextButton bg-[#00796D] px-4 py-3 text-white flex items-center justify-center gap-3 shadow-md hover:bg-[#019887] transition">
+                  Dashboard <FaArrowRightLong />
+                </button>
+              </Link>
+            ) : (
+              <Link to="/login">
+                <button className="w-full rounded-xl rounded-r-3xl toggleButton toggleTextButton bg-[#00796D] px-4 py-3 text-white flex items-center justify-center gap-3 shadow-md hover:bg-[#019887] transition">
+                  Login <FaArrowRightLong />
+                </button>
+              </Link>
+            )}
           </div>
         </div>
       )}

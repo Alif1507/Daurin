@@ -186,7 +186,7 @@ def save_choice(record: dict):
         print(f"[assistant_service] Failed to save choice: {exc}")
 
 
-def load_history(limit: int = 20):
+def load_history(limit: int = 20, user_id: Optional[int] = None):
     """
     Read the last N entries from the JSONL history file.
     """
@@ -201,7 +201,9 @@ def load_history(limit: int = 20):
                 if not line:
                     continue
                 try:
-                    records.append(json.loads(line))
+                    parsed = json.loads(line)
+                    if user_id is None or parsed.get("user_id") == user_id:
+                        records.append(parsed)
                 except json.JSONDecodeError:
                     continue
         return list(reversed(records))[:limit]
@@ -210,7 +212,51 @@ def load_history(limit: int = 20):
         return []
 
 
-def suggest_product(trash_items: str, requested_variant: Optional[str] = None) -> dict:
+def update_history_item(user_id: int, timestamp: str, payload: dict) -> bool:
+    """
+    Update a specific history item by user_id and timestamp.
+    payload may include 'checked' (list of ints) or 'delete' (bool).
+    """
+    history_path = os.path.join(os.path.dirname(__file__), "..", "assistant_history.jsonl")
+    if not os.path.exists(history_path):
+        return False
+
+    updated = False
+    try:
+        with open(history_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+
+        new_lines = []
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                item = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+
+            if item.get("user_id") == user_id and item.get("timestamp") == timestamp:
+                if payload.get("delete"):
+                    updated = True
+                    continue  # skip writing -> delete
+                if "checked" in payload:
+                    item["checked_steps"] = payload["checked"]
+                    updated = True
+            new_lines.append(json.dumps(item, ensure_ascii=False))
+
+        with open(history_path, "w", encoding="utf-8") as f:
+            for nl in new_lines:
+                f.write(nl + "\n")
+
+    except Exception as exc:
+        print(f"[assistant_service] Failed to update history: {exc}")
+        return False
+
+    return updated
+
+
+def suggest_product(trash_items: str, requested_variant: Optional[str] = None, user_id: Optional[int] = None) -> dict:
     """
     Public function used by the API layer.
     Supports two flows:
@@ -256,7 +302,8 @@ def suggest_product(trash_items: str, requested_variant: Optional[str] = None) -
         "variant": variant,
         "product_name": product_name,
         "steps": steps,
-        "image_url": image_url
+        "image_url": image_url,
+        "user_id": user_id,
     })
 
     return {
