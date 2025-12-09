@@ -45,13 +45,13 @@ const Navbar = () => {
               </a>
             </li>
             <li>
-              <a href="#contact" className="transition hover:opacity-70">
-                Contact
+              <a href="#edukasi" className="transition hover:opacity-70">
+                Edukasi
               </a>
             </li>
             <li>
-              <a href="#faq" className="transition hover:opacity-70">
-                FAQ
+              <a href="#recy" className="transition hover:opacity-70">
+                Recy
               </a>
             </li>
           </ul>
@@ -117,20 +117,20 @@ const Navbar = () => {
               </li>
               <li>
                 <a
-                  href="#contact"
+                  href="#edukasi"
                   className="block py-2 transition hover:opacity-70"
                   onClick={toggleMenu}
                 >
-                  Contact
+                  Edukasi
                 </a>
               </li>
               <li>
                 <a
-                  href="#faq"
+                  href="#recy"
                   className="block py-2 transition hover:opacity-70"
                   onClick={toggleMenu}
                 >
-                  FAQ
+                  Recy
                 </a>
               </li>
             </ul>

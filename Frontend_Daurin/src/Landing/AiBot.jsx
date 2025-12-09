@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 
 const AiBot = () => {
   return (
-    <section className='flex flex-col mt-64 items-center gap-10'>
+    <section className='flex flex-col mt-64 items-center gap-10' id='recy'>
       <h1 className='text-3xl text-[#005048] text-center'>
         Bingung Mau Buat Karya apa? Tanyakan pada Recy
       </h1>

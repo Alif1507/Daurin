@@ -18,7 +18,7 @@ const About = () => {
   }
 
   return (
-    <main className="relative">
+    <main className="relative" id="about">
       <Bumi3d />
       <Bumi3dMobile />
       <img

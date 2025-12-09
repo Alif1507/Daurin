@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { FaArrowLeft } from "react-icons/fa";
+import { Link } from "react-router";
 
 const LANES = 3;
 const TRACK_LENGTH = 6;
@@ -289,9 +291,18 @@ export default function App() {
   const counts = game.counts || { organik: 0, anorganik: 0, b3: 0 };
 
   return (
-    <div className="h-screen bg-gradient-to-b from-cyan-200 via-white to-cyan-100 flex items-center justify-center px-2 sm:px-3 md:px-6 py-3 md:py-6 overflow-hidden">
+    <div className="h-screen relative bg-gradient-to-b from-cyan-200 via-white to-cyan-100 flex items-center justify-center px-2 sm:px-3 md:px-6 py-3 md:py-6 overflow-hidden">
+      <Link to="/">
+          <button
+              disabled={game.gameOver}
+              className="h-12 w-12 absolute top-10 left-10 rounded-full bg-white/20 border border-white/40 flex items-center justify-center text-lg font-bold shadow-lg backdrop-blur"
+            >
+              <FaArrowLeft />
+            </button>
+         </Link>
       
       <div className="relative w-full max-w-6xl bg-transparent rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
+         
         {/* Background side panels */}
        
         <div className="absolute inset-0 flex">

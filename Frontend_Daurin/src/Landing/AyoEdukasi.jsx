@@ -127,7 +127,7 @@ const AyoEdukasi = () => {
   }
 
   return (
-    <section className='mt-20 md:mt-32 px-4 md:px-6'>
+    <section className='mt-20 md:mt-32 px-4 md:px-6' id='edukasi'>
       <h1 className='text-2xl md:text-3xl text-center toggleText font-medium mb-6 md:mb-10'>
         Ayo!! Edukasi Dirimu
       </h1>

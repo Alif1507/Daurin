@@ -352,6 +352,13 @@ export default function Quiz() {
   return (
     // attach stage-level click handler here
     <div className="w-full h-screen bg-black relative overflow-hidden" onClick={handleStageClick}>
+       <Link to="/">
+          <button
+              className="h-12 z-50 w-12 absolute top-10 left-10 rounded-full bg-white/20 border border-white/40 flex items-center justify-center text-lg font-bold shadow-lg backdrop-blur"
+            >
+              <FaArrowLeft />
+            </button>
+         </Link>
       <div className="absolute top-4 right-4 z-10 bg-white rounded-xl shadow-lg px-4 md:px-6 py-2 md:py-3">
         <p className="text-lg md:text-2xl font-bold text-green-700">Skor: <span className="text-3xl md:text-4xl">{score}</span></p>
       </div>

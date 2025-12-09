@@ -5,7 +5,7 @@ import { useTheme } from "../context/ThemeContext";
 const Hero = () => {
   const { theme } = useTheme();
   return (
-    <section className="flex flex-col text-[#005048] w-screen justify-center items-center mt-50 max-sm:hidden">
+    <section className="flex flex-col text-[#005048] w-screen justify-center items-center mt-50 max-sm:hidden" id="home">
       <h1 className="text-4xl font-bold mb-3 mr-60 toggleTextTitle">Welcome To Daurin</h1>
       <div className="flex flex-row gap-5">
         <div className="mb-10">
