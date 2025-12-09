@@ -12,12 +12,18 @@ import Register from "./auth/Register.jsx";
 import Login from "./auth/Login.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import Game from "./pages/Game.jsx";
 import RecyAssistant from "./Landing/RecyAssistant.jsx";
+import Quiz from "./pages/Quiz.jsx";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>
       <ThemeProvider>
+        <Routes>
+          <Route path="/game" element={<Game />} />
+          <Route path="/quiz" element={<Quiz />} />
+        </Routes>
         <AuthProvider>
           <Routes>
             <Route path="/" element={<App />} />

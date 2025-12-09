@@ -1,555 +1,539 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-// ================== DATA DASAR ==================
+const LANES = 3;
+const TRACK_LENGTH = 6;
+const PLAYER_ROW_INDEX = TRACK_LENGTH - 2; // place player slightly above the bottom visually
 
-const BUILDINGS = {
-  road: {
-    key: "road",
-    name: "Road",
-    cost: 5,
-    pollution: 2,
-    happiness: -1,
-    economy: 1,
-    colorClass: "bg-slate-400",
-    description: "Jalan dasar. Sedikit polusi tapi penting untuk ekonomi.",
+const TRASH_TYPES = {
+  organik: {
+    key: "organik",
+    label: "Sampah Organik",
+    emoji: "/img/game/oraganik.png",
+    color: "bg-emerald-500",
   },
-  park: {
-    key: "park",
-    name: "Park",
-    cost: 15,
-    pollution: -5,
-    happiness: 8,
-    economy: 0,
-    colorClass: "bg-emerald-400",
-    description: "Taman kota hijau, bikin warga bahagia dan udara bersih.",
+  anorganik: {
+    key: "anorganik",
+    label: "Sampah Anorganik",
+    emoji: "/img/game/anorganik.png",
+    color: "bg-sky-400",
   },
-  solar: {
-    key: "solar",
-    name: "Solar Panel",
-    cost: 20,
-    pollution: -7,
-    happiness: 4,
-    economy: 3,
-    colorClass: "bg-sky-400",
-    description: "Energi bersih, kurangi polusi dan dukung ekonomi.",
-  },
-  factory: {
-    key: "factory",
-    name: "Factory",
-    cost: 25,
-    pollution: 10,
-    happiness: -5,
-    economy: 10,
-    colorClass: "bg-orange-400",
-    description: "Pabrik menambah ekonomi, tapi polusi naik.",
-  },
-  bus: {
-    key: "bus",
-    name: "Bus Station",
-    cost: 18,
-    pollution: -3,
-    happiness: 3,
-    economy: 4,
-    colorClass: "bg-indigo-400",
-    description: "Transport publik, ngurangin kendaraan pribadi.",
-  },
-  recycle: {
-    key: "recycle",
-    name: "Recycle Center",
-    cost: 22,
-    pollution: -8,
-    happiness: 2,
-    economy: 2,
-    colorClass: "bg-teal-400",
-    description: "Pusat daur ulang, bantu turunkan polusi jangka panjang.",
+  b3: {
+    key: "b3",
+    label: "Sampah B3",
+    emoji: "/img/game/b3.png",
+    color: "bg-amber-300",
   },
 };
 
-const LEVELS = [
-  {
-    id: "standard",
-    name: "Kota Normal",
-    description: "Kota biasa dengan polusi sedang. Ubah jadi eco-city hijau.",
-    initialStats: { pollution: 60, happiness: 40, economy: 40 },
-    startingMoney: 100,
-    introMessage: "Kotamu masih abu-abu. Ubah jadi kota hijau! 🌱",
-  },
-  {
-    id: "industrial",
-    name: "Kota Industri",
-    description: "Banyak pabrik, polusi tinggi, ekonomi kuat tapi warga lelah.",
-    initialStats: { pollution: 80, happiness: 30, economy: 60 },
-    startingMoney: 120,
-    introMessage:
-      "Kota industri penuh asap. Bisakah kamu bikin ekonominya tetap jalan sambil nurunin polusi? 🏭",
-  },
-  {
-    id: "coastal",
-    name: "Kota Pesisir",
-    description:
-      "Kota tepi laut dengan risiko banjir dan kenaikan permukaan air.",
-    initialStats: { pollution: 55, happiness: 45, economy: 35 },
-    startingMoney: 110,
-    introMessage:
-      "Kota pesisir rentan banjir. Jaga lingkungan biar warga tetap aman. 🌊",
-  },
-];
-
-const EVENTS = [
-  {
-    key: "flood",
-    name: "Banjir Besar",
-    description:
-      "Curah hujan tinggi dan drainase buruk memicu banjir. Warga terdampak.",
-    effect: { pollution: 5, happiness: -10, economy: -8 },
-    weight: 1.2,
-    levels: ["coastal"],
-  },
-  {
-    key: "heatwave",
-    name: "Gelombang Panas",
-    description:
-      "Suhu kota naik drastis. Area tanpa ruang hijau terasa menyiksa.",
-    effect: { pollution: 3, happiness: -8, economy: -4 },
-    weight: 1,
-  },
-  {
-    key: "protest",
-    name: "Demo Warga",
-    description:
-      "Warga protes kebijakan tidak pro-lingkungan. Pemerintah tertekan.",
-    effect: { pollution: 0, happiness: -12, economy: -5 },
-    weight: 1,
-  },
-  {
-    key: "greenSubsidy",
-    name: "Subsidi Hijau",
-    description:
-      "Pemerintah pusat memberi subsidi untuk proyek energi terbarukan.",
-    effect: { pollution: -8, happiness: 6, economy: 5 },
-    weight: 1,
-  },
-  {
-    key: "cleanup",
-    name: "Gerakan Bersih Kota",
-    description:
-      "Gerakan komunitas membersihkan sungai dan taman kota secara massal.",
-    effect: { pollution: -6, happiness: 7, economy: 0 },
-    weight: 1,
-  },
-];
-
-function clamp(num, min, max) {
-  return Math.min(Math.max(num, min), max);
+function createEmptyRow() {
+  return Array(LANES).fill(null);
 }
 
-// ================== KOMPONEN UTAMA ==================
+function createInitialTrack() {
+  return Array(TRACK_LENGTH)
+    .fill(null)
+    .map(() => createEmptyRow());
+}
 
-export default function Game() {
-  // Level
-  const [levelIndex, setLevelIndex] = useState(0);
-  const currentLevel = LEVELS[levelIndex];
+function generateRow() {
+  const row = createEmptyRow();
+  // 60% chance ada sampah
+  if (Math.random() < 0.6) {
+    const laneIndex = Math.floor(Math.random() * LANES);
+    const types = Object.keys(TRASH_TYPES);
+    const picked = types[Math.floor(Math.random() * types.length)];
+    row[laneIndex] = { type: picked };
+  }
+  return row;
+}
 
-  // State game
-  const [grid, setGrid] = useState(Array(25).fill(null)); // 5x5
-  const [selectedBuilding, setSelectedBuilding] = useState(null);
-  const [stats, setStats] = useState(currentLevel.initialStats);
-  const [money, setMoney] = useState(currentLevel.startingMoney);
-  const [turn, setTurn] = useState(0);
-  const [statusMessage, setStatusMessage] = useState(
-    currentLevel.introMessage
-  );
-  const [gameOver, setGameOver] = useState(false);
+export default function App() {
+  const [game, setGame] = useState({
+    track: createInitialTrack(),
+    playerLane: 1, // 0,1,2
+    score: 0,
+    mistakes: 0,
+    lives: 3,
+    steps: 0,
+    counts: { organik: 0, anorganik: 0, b3: 0 },
+    pendingTrash: null, // { type }
+    gameOver: false,
+    win: false,
+    message: "Tekan Mulai untuk berlari dan pilah sampah!",
+  });
 
-  // Event
-  const [activeEvent, setActiveEvent] = useState(null);
-  const [eventLog, setEventLog] = useState([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const [showStart, setShowStart] = useState(true);
+  const [selectedMinutes, setSelectedMinutes] = useState(1);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const touchStartX = useRef(null);
+  const runningRef = useRef(false);
+  const gameOverRef = useRef(false);
 
-  // ================== LOGIKA BANTU ==================
+  // ====== GAME LOOP (AUTO JALAN) ======
+  useEffect(() => {
+    if (!isRunning || game.gameOver || game.pendingTrash) return;
 
-  const getCityStatusLabel = (s) => {
-    const { pollution, happiness, economy } = s;
-    if (pollution <= 20 && happiness >= 70 && economy >= 50) {
-      return "🌿 Eco City – Kota hijau sejahtera!";
-    }
-    if (pollution >= 80) return "☠️ Kota beracun – polusi parah!";
-    if (happiness <= 20) return "😟 Warga resah – kebijakan kurang ramah.";
-    if (economy <= 15) return "📉 Krisis ekonomi – kota bangkrut.";
-    if (pollution <= 40 && happiness >= 50) {
-      return "💚 Kota mulai hijau, terus perbaiki!";
-    }
-    return "🌫 Kota masih abu-abu, butuh lebih banyak solusi hijau.";
-  };
+    const interval = setInterval(() => {
+      setGame((prev) => {
+        if (prev.gameOver || prev.pendingTrash) return prev;
 
-  const winCondition = (s) =>
-    s.pollution <= 20 && s.happiness >= 70 && s.economy >= 50;
+        const newTrack = [...prev.track];
+        // geser ke bawah: row baru di atas, row paling bawah hilang
+        newTrack.pop();
+        newTrack.unshift(generateRow());
 
-  const loseCondition = (s) =>
-    s.pollution >= 90 || s.happiness <= 10 || s.economy <= 0;
+        // cek tabrakan sampah di posisi player (baris player)
+        const playerRow = [...newTrack[PLAYER_ROW_INDEX]];
+        const cell = playerRow[prev.playerLane];
 
-  const checkGameEnd = (newStats) => {
-    if (winCondition(newStats)) {
-      setStatusMessage(
-        "Selamat! Kamu berhasil mengubah kota ini menjadi Eco City hijau! 🌱"
-      );
-      setGameOver(true);
+        let newPending = prev.pendingTrash;
+        let newMessage = prev.message;
+
+        if (!newPending && cell) {
+          // player kena sampah: stop dulu, suruh pilah
+          newPending = cell;
+          playerRow[prev.playerLane] = null;
+          newTrack[PLAYER_ROW_INDEX] = playerRow;
+          newMessage =
+            "Ada sampah di depanmu! Pilih tempat sampah yang tepat! ♻️";
+        }
+
+        const newSteps = prev.steps + 1;
+
+        return {
+          ...prev,
+          track: newTrack,
+          pendingTrash: newPending,
+          steps: newSteps,
+          message: newMessage,
+        };
+      });
+    }, 800);
+
+    return () => clearInterval(interval);
+  }, [isRunning, game.gameOver, game.pendingTrash]);
+
+  // TIMER COUNTDOWN
+  useEffect(() => {
+    if (!isRunning || game.gameOver) return;
+    if (timeLeft <= 0) {
+      setGame((prev) => ({
+        ...prev,
+        gameOver: true,
+        win: true,
+        message: "Waktu habis! Kamu membersihkan area tepat waktu. 🎉",
+      }));
+      setIsRunning(false);
       return;
     }
 
-    if (loseCondition(newStats)) {
-      setStatusMessage(
-        "Kota kolaps! Kebijakanmu tidak berkelanjutan. Coba lagi dan lebih seimbang. 💥"
-      );
-      setGameOver(true);
-      return;
-    }
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => prev - 1);
+    }, 1000);
 
-    setStatusMessage(getCityStatusLabel(newStats));
+    return () => clearInterval(timer);
+  }, [isRunning, game.gameOver, timeLeft]);
+
+  // Prevent page scroll while on game screen
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
+  // ====== CONTROL: GERAK KIRI / KANAN ======
+  const moveLeft = () => {
+    setGame((prev) => {
+      if (gameOverRef.current || !runningRef.current) return prev;
+      const newLane = Math.max(0, prev.playerLane - 1);
+      return { ...prev, playerLane: newLane };
+    });
   };
 
-  // Random event setiap turn (tidak selalu muncul)
-  const triggerRandomEvent = (baseStats) => {
-    // Chance event muncul (misal 40%)
-    const roll = Math.random();
-    if (roll > 0.4) {
-      setActiveEvent(null);
-      return baseStats;
-    }
-
-    // Filter event sesuai level (kalau ada field levels)
-    const applicableEvents = EVENTS.filter((ev) => {
-      if (!ev.levels) return true;
-      return ev.levels.includes(currentLevel.id);
+  const moveRight = () => {
+    setGame((prev) => {
+      if (gameOverRef.current || !runningRef.current) return prev;
+      const newLane = Math.min(LANES - 1, prev.playerLane + 1);
+      return { ...prev, playerLane: newLane };
     });
+  };
 
-    if (applicableEvents.length === 0) {
-      setActiveEvent(null);
-      return baseStats;
-    }
+  // ====== CONTROL: PILAH SAMPAH ======
+  const handleSort = (choiceKey) => {
+    setGame((prev) => {
+      if (!prev.pendingTrash || prev.gameOver) return prev;
 
-    // Random pick dengan weight sederhana
-    const pool = [];
-    applicableEvents.forEach((ev) => {
-      const count = ev.weight ? Math.round(ev.weight * 10) : 10;
-      for (let i = 0; i < count; i++) pool.push(ev);
+      const correct = prev.pendingTrash.type === choiceKey;
+      let newScore = prev.score;
+      let newMistakes = prev.mistakes;
+      let newLives = prev.lives;
+      let newMessage = "";
+      const newCounts = { ...prev.counts };
+
+      if (correct) {
+        newScore += 1;
+        newCounts[choiceKey] = (newCounts[choiceKey] || 0) + 1;
+        newMessage = "Nice! Kamu memilah sampah dengan benar! 🌱";
+      } else {
+        newMistakes += 1;
+        newLives -= 1;
+        newMessage = "Ups, salah tempat sampah. Hati-hati lagi ya. 😅";
+      }
+
+      let gameOver = prev.gameOver;
+      let win = prev.win;
+
+      if (newLives <= 0) {
+        gameOver = true;
+        newMessage =
+          "Nyawa habis! Kota masih kotor... coba lagi dan pilah lebih baik. 💀";
+      } else if (newScore >= 30) {
+        gameOver = true;
+        win = true;
+        newMessage =
+          "Keren! Kamu sudah memilah banyak sampah dan kota jadi jauh lebih bersih! 🏆";
+      }
+
+      return {
+        ...prev,
+        score: newScore,
+        mistakes: newMistakes,
+        lives: newLives,
+        counts: newCounts,
+        pendingTrash: null,
+        gameOver,
+        win,
+        message: newMessage,
+      };
     });
-    const event =
-      pool[Math.floor(Math.random() * pool.length)] || applicableEvents[0];
+  };
 
-    const newStats = {
-      pollution: clamp(baseStats.pollution + event.effect.pollution, 0, 100),
-      happiness: clamp(baseStats.happiness + event.effect.happiness, 0, 100),
-      economy: clamp(baseStats.economy + event.effect.economy, 0, 100),
+  // ====== KEYBOARD CONTROL (← → dan 1 2 3) ======
+  useEffect(() => {
+    runningRef.current = isRunning;
+  }, [isRunning]);
+
+  useEffect(() => {
+    gameOverRef.current = game.gameOver;
+  }, [game.gameOver]);
+
+  // ====== KEYBOARD CONTROL (← → dan 1 2 3) ======
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (!runningRef.current || gameOverRef.current) return;
+      if (e.key === "ArrowLeft" || e.key === "a") {
+        moveLeft();
+      } else if (e.key === "ArrowRight" || e.key === "d") {
+        moveRight();
+      } else if (e.key === "1") {
+        handleSort("organik");
+      } else if (e.key === "2") {
+        handleSort("anorganik");
+      } else if (e.key === "3") {
+        handleSort("b3");
+      }
     };
 
-    setActiveEvent({
-      ...event,
-      effectApplied: event.effect,
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [handleSort]);
+
+  const toggleRun = () => {
+    if (game.gameOver) return;
+    setIsRunning((prev) => !prev);
+    if (!isRunning && !game.pendingTrash) {
+      setGame((prev) => ({
+        ...prev,
+        message: "Lari! Hindari dan pilah sampah di jalanan kota! 🏃‍♂️",
+      }));
+      setShowStart(false);
+    }
+  };
+
+  const startGame = () => {
+    const seconds = Math.min(Math.max(selectedMinutes, 1), 7) * 60;
+    setTimeLeft(seconds);
+    setShowStart(false);
+    setIsRunning(true);
+    setGame((prev) => ({
+      ...prev,
+      message: "Lari! Hindari dan pilah sampah di jalanan kota! 🏃‍♂️",
+    }));
+  };
+
+  const resetGame = () => {
+    setGame({
+      track: createInitialTrack(),
+      playerLane: 1,
+      score: 0,
+      mistakes: 0,
+      lives: 3,
+      steps: 0,
+      counts: { organik: 0, anorganik: 0, b3: 0 },
+      pendingTrash: null,
+      gameOver: false,
+      win: false,
+      message: "Tekan Mulai untuk berlari dan pilah sampah!",
     });
-
-    setEventLog((prev) => [
-      {
-        turn: turn + 1,
-        name: event.name,
-        description: event.description,
-        effect: event.effect,
-      },
-      ...prev.slice(0, 9), // keep last 10
-    ]);
-
-    return newStats;
+    setTimeLeft(Math.min(Math.max(selectedMinutes, 1), 7) * 60);
+    setIsRunning(false);
+    setShowStart(true);
   };
 
-  // ================== HANDLER ==================
-
-  const handleSelectBuilding = (key) => {
-    if (gameOver) return;
-    setSelectedBuilding(key);
-  };
-
-  const handlePlaceBuilding = (index) => {
-    if (gameOver) return;
-    if (!selectedBuilding) return;
-
-    if (grid[index] !== null) {
-      // sudah ada bangunan
-      return;
-    }
-
-    const building = BUILDINGS[selectedBuilding];
-    if (!building) return;
-
-    if (money < building.cost) {
-      alert("Uangmu tidak cukup buat bangunan ini, bro 💸");
-      return;
-    }
-
-    const newGrid = [...grid];
-    newGrid[index] = building.key;
-    setGrid(newGrid);
-
-    const newMoney = money - building.cost;
-    setMoney(newMoney);
-
-    let updatedStats = {
-      pollution: clamp(stats.pollution + building.pollution, 0, 100),
-      happiness: clamp(stats.happiness + building.happiness, 0, 100),
-      economy: clamp(stats.economy + building.economy, 0, 100),
-    };
-
-    // Trigger event (kalau kena)
-    updatedStats = triggerRandomEvent(updatedStats);
-
-    setStats(updatedStats);
-
-    const newTurn = turn + 1;
-    setTurn(newTurn);
-
-    checkGameEnd(updatedStats);
-  };
-
-  const handleReset = () => {
-    setGrid(Array(25).fill(null));
-    setSelectedBuilding(null);
-    setStats(currentLevel.initialStats);
-    setMoney(currentLevel.startingMoney);
-    setTurn(0);
-    setStatusMessage(currentLevel.introMessage);
-    setGameOver(false);
-    setActiveEvent(null);
-    setEventLog([]);
-  };
-
-  const handleChangeLevel = (idx) => {
-    setLevelIndex(idx);
-    // Reset game setiap ganti level
-    const lvl = LEVELS[idx];
-    setGrid(Array(25).fill(null));
-    setSelectedBuilding(null);
-    setStats(lvl.initialStats);
-    setMoney(lvl.startingMoney);
-    setTurn(0);
-    setStatusMessage(lvl.introMessage);
-    setGameOver(false);
-    setActiveEvent(null);
-    setEventLog([]);
-  };
-
-  // ================== UI KOMBINATOR ==================
-
-  const renderStatBar = (label, value, emoji, barColor = "bg-emerald-400") => {
-    return (
-      <div className="mb-2">
-        <div className="flex items-center justify-between text-xs mb-1">
-          <span>
-            {emoji} {label}
-          </span>
-          <span>{value}</span>
-        </div>
-        <div className="w-full h-2 rounded-full bg-slate-600/70 overflow-hidden">
-          <div
-            className={`h-full ${barColor} transition-all duration-200`}
-            style={{ width: `${value}%` }}
-          ></div>
-        </div>
-      </div>
-    );
-  };
-
-  // ================== RENDER ==================
+  const timeText = `${String(Math.floor(timeLeft / 60)).padStart(2, "0")}:${String(
+    timeLeft % 60
+  ).padStart(2, "0")}`;
+  const counts = game.counts || { organik: 0, anorganik: 0, b3: 0 };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-900 text-white flex justify-center px-4 py-4">
-      <div className="flex flex-col md:flex-row gap-4 max-w-5xl w-full">
-        {/* PANEL KIRI */}
-        <div className="w-full md:w-72 bg-slate-900/85 border border-slate-600/60 rounded-2xl p-4 shadow-lg shadow-emerald-500/10 backdrop-blur">
-          {/* Header + level selector */}
-          <div className="flex items-start justify-between gap-2 mb-3">
-            <div>
-              <h1 className="text-lg font-bold tracking-tight">
-                Green City Tycoon
-              </h1>
-              <p className="text-[11px] text-slate-300 mt-0.5">
-                Dari kota abu-abu menuju kota hijau berkelanjutan. 🌱
-              </p>
-            </div>
+    <div className="h-screen bg-gradient-to-b from-cyan-200 via-white to-cyan-100 flex items-center justify-center px-2 sm:px-3 md:px-6 py-3 md:py-6 overflow-hidden">
+      
+      <div className="relative w-full max-w-6xl bg-transparent rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
+        {/* Background side panels */}
+       
+        <div className="absolute inset-0 flex">
+          <div className="w-[18%] bg-emerald-700/90">
           </div>
-
-          <div className="mb-3">
-            <label className="text-xs text-slate-300 mb-1 block">
-              🎯 Pilih Skenario Kota
-            </label>
-            <div className="flex gap-1.5 flex-wrap">
-              {LEVELS.map((lvl, idx) => (
-                <button
-                  key={lvl.id}
-                  onClick={() => handleChangeLevel(idx)}
-                  className={`text-[11px] px-2.5 py-1 rounded-full border transition-all ${
-                    levelIndex === idx
-                      ? "bg-emerald-500/90 border-emerald-400 text-slate-900 shadow-md shadow-emerald-400/40"
-                      : "bg-slate-800/80 border-slate-600 hover:border-emerald-400/80 hover:bg-slate-800"
-                  }`}
-                >
-                  {lvl.name}
-                </button>
-              ))}
-            </div>
-            <p className="text-[11px] text-slate-300 mt-1">
-              {currentLevel.description}
-            </p>
-          </div>
-
-          {/* Money & turn */}
-          <div className="flex items-center justify-between text-xs mb-2">
-            <span>💰 Money: {money}</span>
-            <span>🕒 Turn: {turn}</span>
-          </div>
-
-          {/* Stats */}
-          <div className="mb-3">
-            {renderStatBar("Pollution", stats.pollution, "💨", "bg-red-400")}
-            {renderStatBar("Happiness", stats.happiness, "😊", "bg-yellow-300")}
-            {renderStatBar("Economy", stats.economy, "💼", "bg-sky-400")}
-          </div>
-
-          {/* Status message */}
-          <p className="text-[11px] text-slate-100 mb-3 min-h-[40px]">
-            {statusMessage}
-          </p>
-
-          <div className="border-t border-slate-700/80 my-2" />
-
-          {/* Bangunan */}
-          <h2 className="text-xs font-semibold mb-2 uppercase tracking-wide text-slate-200">
-            Bangunan
-          </h2>
-          <div className="grid grid-cols-1 gap-2 mb-3">
-            {Object.values(BUILDINGS).map((b) => (
-              <button
-                key={b.key}
-                onClick={() => handleSelectBuilding(b.key)}
-                disabled={gameOver}
-                className={`text-left px-2.5 py-2 rounded-xl border text-xs transition-all group ${
-                  selectedBuilding === b.key
-                    ? "border-emerald-400 bg-emerald-500/10 shadow-md shadow-emerald-400/30"
-                    : "border-slate-600/70 bg-slate-900/95 hover:border-emerald-400/80 hover:bg-slate-800/90"
-                } ${gameOver ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
-              >
-                <div className="flex items-center justify-between mb-0.5">
-                  <span className="font-medium">{b.name}</span>
-                  <span className="text-[11px]">💰 {b.cost}</span>
-                </div>
-                <p className="text-[10px] text-slate-300 mb-1">
-                  {b.description}
-                </p>
-                <div className="text-[10px] text-slate-200 flex gap-2">
-                  <span>♻ P: {b.pollution}</span>
-                  <span>😀: {b.happiness}</span>
-                  <span>💼: {b.economy}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          <button
-            onClick={handleReset}
-            className="w-full py-2 rounded-full text-xs font-semibold bg-gradient-to-r from-emerald-500 via-emerald-400 to-emerald-500 text-slate-900 shadow-md shadow-emerald-400/40 hover:brightness-110 active:scale-[0.98] transition-all"
-          >
-            Reset Game
-          </button>
+          <div className="flex-1 bg-transparent" />
+          <div className="w-[18%] bg-emerald-700/90" />
         </div>
 
-        {/* PANEL KANAN */}
-        <div className="flex-1 bg-slate-900/85 border border-slate-600/60 rounded-2xl p-4 shadow-lg shadow-emerald-500/10 backdrop-blur flex flex-col">
-          <div className="flex items-start justify-between mb-3 gap-2">
-            <div>
-              <h2 className="text-sm md:text-base font-semibold">
-                Peta Kota ({currentLevel.name})
-              </h2>
-              <p className="text-[11px] text-slate-300 mt-0.5">
-                Pilih bangunan di panel kiri, lalu klik kotak di peta untuk
-                menaruhnya.
-              </p>
-            </div>
-            <div className="hidden md:flex flex-col items-end text-[11px] text-slate-300">
-              <span>Status Kota:</span>
-              <span className="text-right text-emerald-300">
-                {getCityStatusLabel(stats)}
-              </span>
-            </div>
+        <div className="relative grid md:grid-cols-[18%_1fr_18%] min-h-[80vh]">
+          {/* Left rail */}
+          <div className="hidden md:flex flex-col items-center py-6 text-white gap-4">
+            <button
+              onClick={toggleRun}
+              disabled={game.gameOver}
+              className="h-12 w-12 rounded-full bg-white/20 border border-white/40 flex items-center justify-center text-lg font-bold shadow-lg backdrop-blur"
+            >
+              {isRunning ? "II" : "▶"}
+            </button>
           </div>
 
-          {/* GRID KOTA */}
-          <div className="grid grid-cols-5 gap-2 flex-1">
-            {grid.map((cell, idx) => {
-              const building = cell ? BUILDINGS[cell] : null;
-              return (
-                <button
-                  key={idx}
-                  onClick={() => handlePlaceBuilding(idx)}
-                  className={`rounded-xl border text-[11px] flex items-center justify-center text-center px-1 py-1.5 transition-all ${
-                    building
-                      ? `${building.colorClass} text-slate-900 border-slate-200/60 shadow-sm shadow-emerald-300/50`
-                      : "bg-slate-900/90 text-slate-500 border-slate-600/80 hover:border-emerald-400/70 hover:bg-slate-800/90"
-                  } ${
-                    gameOver || building
-                      ? "cursor-default"
-                      : "cursor-pointer active:scale-[0.97]"
-                  }`}
-                >
-                  {building ? building.name : "Empty"}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Status & Event */}
-          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 text-[11px]">
-            <div className="rounded-xl bg-slate-950/70 border border-slate-700/80 p-2">
-              <p className="font-semibold mb-1">Status Kota</p>
-              <p className="text-slate-200">{getCityStatusLabel(stats)}</p>
-            </div>
-
-            <div className="rounded-xl bg-slate-950/70 border border-slate-700/80 p-2">
-              <p className="font-semibold mb-1">Event Terakhir</p>
-              {activeEvent ? (
-                <div className="space-y-1">
-                  <p className="text-emerald-300 font-medium">
-                    {activeEvent.name}
-                  </p>
-                  <p className="text-slate-200">{activeEvent.description}</p>
-                  <p className="text-[10px] text-slate-300">
-                    Efek: 💨 {activeEvent.effectApplied.pollution} | 😀{" "}
-                    {activeEvent.effectApplied.happiness} | 💼{" "}
-                    {activeEvent.effectApplied.economy}
-                  </p>
-                </div>
-              ) : (
-                <p className="text-slate-300">
-                  Belum ada event khusus di turn ini.
+          {/* Center board */}
+          <div className="relative flex flex-col items-center justify-center py-4 md:py-6 px-2 md:px-3">
+            <div className="w-full max-w-3xl">
+              <div className="text-center text-slate-800 mb-4">
+                <h1 className="text-2xl md:text-3xl font-semibold">
+                  Pilah Sampah Cepat
+                </h1>
+                <p className="text-sm text-slate-600">
+                  Gerakkan karakter dan pilih kategori yang tepat
                 </p>
-              )}
+              </div>
+
+              <div
+                className="relative mx-auto w-full max-w-[640px] md:max-w-[720px] aspect-[9/16] md:aspect-[10/16] max-h-[82vh] md:max-h-[86vh] rounded-[28px] overflow-hidden shadow-2xl border border-slate-200/80 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 touch-none"
+                onTouchStart={(e) => {
+                  touchStartX.current = e.changedTouches[0].clientX;
+                }}
+                onTouchEnd={(e) => {
+                  const endX = e.changedTouches[0].clientX;
+                  const startX = touchStartX.current;
+                  if (startX === null) return;
+                  const delta = endX - startX;
+                  if (Math.abs(delta) > 30) {
+                    if (delta > 0) {
+                      moveRight();
+                    } else {
+                      moveLeft();
+                    }
+                  }
+                  touchStartX.current = null;
+                }}
+              >
+                {/* faint background */}
+                <div className="absolute inset-y-0 left-[10%] w-[80%] bg-gradient-to-b from-slate-800/30 via-slate-900/80 to-black/90 rounded-[28px]" />
+
+                {/* dashed lanes */}
+                <div className="absolute inset-y-0 left-1/3 w-px border-l border-dashed border-white/70 opacity-70" />
+                <div className="absolute inset-y-0 left-2/3 w-px border-l border-dashed border-white/70 opacity-70" />
+                
+               
+
+                {/* Mobile move buttons */}
+                <div className="absolute z-500 inset-x-0 bottom-40 flex justify-between px-4 md:hidden pointer-events-none">
+                  <button
+                    onClick={moveLeft}
+                    className="pointer-events-auto h-12 w-12 rounded-full bg-white/20 border border-white/30 text-white text-xl font-semibold shadow-lg backdrop-blur"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    onClick={moveRight}
+                    className="pointer-events-auto h-12 w-12 rounded-full bg-white/20 border border-white/30 text-white text-xl font-semibold shadow-lg backdrop-blur"
+                  >
+                    ›
+                  </button>
+                </div>
+
+                {/* Player + trash */}
+                <div className="relative h-full grid grid-rows-6 pb-20 md:pb-16">
+                  {game.track.map((row, rowIndex) => (
+                    <div key={rowIndex} className="grid grid-cols-3 h-full">
+                      {row.map((cell, laneIndex) => {
+                        const isPlayerRow = rowIndex === PLAYER_ROW_INDEX;
+                        const isPlayerLane = laneIndex === game.playerLane;
+                        const isPlayerHere = isPlayerRow && isPlayerLane;
+                        const trash = cell ? TRASH_TYPES[cell.type] : null;
+                        return (
+                          <div
+                            key={laneIndex}
+                            className="relative flex items-center justify-center"
+                          >
+                            {trash && (
+                              <img
+                                src={trash.emoji}
+                                alt={trash.label}
+                                className={`w-10 h-10 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.35)] transition-all ${
+                                  rowIndex < 2
+                                    ? "scale-75 opacity-80"
+                                    : rowIndex < 4
+                                    ? "scale-90 opacity-90"
+                                    : "scale-100"
+                                }`}
+                              />
+                            )}
+                            {isPlayerHere && (
+                              <div className="absolute bottom-16 md:bottom-12 text-5xl drop-shadow-[0_10px_20px_rgba(0,0,0,0.45)]">
+                                <img src="/img/game/player.png" className="w- h-25" alt="player" />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Bottom choices */}
+                <div className="absolute bottom-3 inset-x-4 grid grid-cols-3 gap-3">
+                  {Object.values(TRASH_TYPES).map((t, idx) => (
+                    <button
+                      key={t.key}
+                      onClick={() => handleSort(t.key)}
+                      className="bg-white rounded-2xl shadow-lg border border-slate-200 py-3 px-2 flex flex-col items-center gap-1 hover:-translate-y-0.5 transition"
+                    >
+                      <img src={t.emoji} alt={t.label} className="w-10 h-10 object-contain" />
+                      <span className="text-xs text-slate-800 text-center leading-tight">
+                        {t.label}
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        {idx + 1}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Start overlay */}
+                {showStart && !game.gameOver && (
+                  <div className="absolute rounded-3xl inset-0 z-501 bg-white/75 backdrop-blur-sm flex flex-col items-center justify-center gap-5 px-6">
+                    <button
+                      onClick={startGame}
+                      className="px-7 py-3 rounded-full bg-emerald-700 text-white text-lg font-semibold shadow-lg hover:translate-y-[-1px] transition"
+                    >
+                      MULAI
+                    </button>
+                    <p className="text-sm md:text-base text-slate-800 text-center">
+                      Tujuan: kumpulkan 30 sampah dan identifikasi jenisnya!
+                    </p>
+                    <div className="flex items-center gap-4 text-sm md:text-base text-slate-800">
+                      <button
+                        onClick={() => setSelectedMinutes((m) => Math.max(1, m - 1))}
+                        className="px-2 py-1 rounded-full hover:bg-slate-200 transition"
+                      >
+                        &lt;
+                      </button>
+                      <span className="min-w-[80px] text-center">{selectedMinutes} menit</span>
+                      <button
+                        onClick={() => setSelectedMinutes((m) => Math.min(7, m + 1))}
+                        className="px-2 py-1 rounded-full hover:bg-slate-200 transition"
+                      >
+                        &gt;
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Game over overlay */}
+                {game.gameOver && (
+                  <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center px-4">
+                    <div className="w-full max-w-xl bg-white rounded-2xl shadow-2xl p-6 md:p-8 text-center space-y-4">
+                      <p className="text-lg md:text-xl font-semibold text-slate-900">
+                        Yeyy!! Kamu berhasil mengumpulkan sampah sebanyak
+                      </p>
+                      <div className="grid grid-cols-3 gap-4 md:gap-6 text-slate-800">
+                        <div className="flex flex-col items-center gap-1">
+                          <img src={TRASH_TYPES.organik.emoji} alt="organik" className="w-14 h-14 object-contain" />
+                          <span className="text-sm font-semibold">{counts.organik}x</span>
+                          <span className="text-xs text-slate-600">Sampah Organik</span>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                          <img src={TRASH_TYPES.anorganik.emoji} alt="anorganik" className="w-14 h-14 object-contain" />
+                          <span className="text-sm font-semibold">{counts.anorganik}x</span>
+                          <span className="text-xs text-slate-600">Sampah Anorganik</span>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                          <img src={TRASH_TYPES.b3.emoji} alt="b3" className="w-14 h-14 object-contain" />
+                          <span className="text-sm font-semibold">{counts.b3}x</span>
+                          <span className="text-xs text-slate-600">Sampah B3</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-center gap-3 md:gap-4">
+                        <button
+                          onClick={resetGame}
+                          className="px-5 py-2 rounded-full bg-emerald-700 text-white font-semibold shadow hover:translate-y-[-1px] transition"
+                        >
+                          Ulang
+                        </button>
+                        <button
+                          onClick={() => {
+                            resetGame();
+                            setShowStart(true);
+                          }}
+                          className="px-5 py-2 rounded-full bg-emerald-700 text-white font-semibold shadow hover:translate-y-[-1px] transition"
+                        >
+                          Kembali
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="mt-3 text-center text-sm text-slate-700">
+                {game.message}
+              </div>
             </div>
           </div>
 
-          {/* LOG EVENT (opsional, kecil di bawah) */}
-          {eventLog.length > 0 && (
-            <div className="mt-3 rounded-xl bg-slate-950/60 border border-slate-800/90 p-2 max-h-32 overflow-y-auto text-[10px]">
-              <p className="font-semibold mb-1">Riwayat Event</p>
-              <ul className="space-y-0.5">
-                {eventLog.map((ev, idx) => (
-                  <li key={idx} className="text-slate-300">
-                    <span className="text-emerald-300 mr-1">Turn {ev.turn}:</span>
-                    <span className="font-medium">{ev.name}</span>{" "}
-                    <span className="text-slate-400">
-                      (💨 {ev.effect.pollution} | 😀 {ev.effect.happiness} | 💼{" "}
-                      {ev.effect.economy})
-                    </span>
-                  </li>
-                ))}
-              </ul>
+          {/* Right rail */}
+          <div className="hidden md:flex flex-col justify-between py-6 text-white items-center">
+            <div className="flex flex-col items-center gap-3">
+              <div className="flex items-center gap-2 text-lg font-semibold">
+                <span className="text-rose-400">❤️</span>
+                <span>
+                  {game.lives}/3
+                </span>
+              </div>
+              <div className="text-sm font-medium">{timeText}</div>
             </div>
-          )}
+
+            <div className="text-xs text-center bg-white/10 border border-white/30 rounded-xl px-3 py-2 backdrop-blur">
+              <p>Score: {game.score}</p>
+              <p>Langkah: {game.steps}</p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={resetGame}
+                className="px-4 py-2 rounded-full bg-white/20 border border-white/40 text-sm font-semibold"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

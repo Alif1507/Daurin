@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
+import { Link } from "react-router";
 
-const GameCard = ({ title, image, isActive }) => {
+const GameCard = ({ link, title, image, isActive }) => {
   return (
     <div
       className={`
@@ -22,7 +23,8 @@ const GameCard = ({ title, image, isActive }) => {
           alt={title}
         />
       </div>
-      <button
+      <Link to={link}>
+          <button
         className={`
           toggleBg toggleText text-[#005048] 
           text-2xl md:text-3xl py-2 px-8 md:px-6 
@@ -37,6 +39,7 @@ const GameCard = ({ title, image, isActive }) => {
       >
         {title}
       </button>
+      </Link>
     </div>
   );
 };
@@ -48,10 +51,12 @@ const GameAndQuiz = () => {
     {
       title: "GAME",
       image: "img/space-odyssey.jpg",
+      link: "/game"
     },
     {
       title: "QUIZ",
       image: "img/space-odyssey.jpg",
+      link: "/quiz"
     },
   ];
 
@@ -113,6 +118,7 @@ const GameAndQuiz = () => {
                 <GameCard
                   title={item.title}
                   image={item.image}
+                  link={item.link}
                   isActive={position === 0}
                 />
               </div>
@@ -141,6 +147,7 @@ const GameAndQuiz = () => {
             key={index}
             title={item.title}
             image={item.image}
+            link={item.link}
             isActive={true}
           />
         ))}
