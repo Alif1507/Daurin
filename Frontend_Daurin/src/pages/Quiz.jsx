@@ -69,7 +69,7 @@ export default function Quiz() {
       correctAnswer: 'A',
       choices: [
         { id: 'A', image: "/img/quiz/Mila/A.png", label: "" },
-        { id: 'B', image: "/img/quiz/choices/5b.jpg", label: "Lampu Hias" },
+        { id: 'B', image: "/img/quiz/Mila/B.png", label: "" },
         { id: 'C', image: "/img/quiz/Mila/C.png", label: "" }
       ]
     }

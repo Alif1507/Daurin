@@ -50,12 +50,12 @@ const GameAndQuiz = () => {
   const items = [
     {
       title: "GAME",
-      image: "img/space-odyssey.jpg",
+      image: "img/game.png",
       link: "/game"
     },
     {
       title: "QUIZ",
-      image: "img/space-odyssey.jpg",
+      image: "img/quiz.png",
       link: "/quiz"
     },
   ];

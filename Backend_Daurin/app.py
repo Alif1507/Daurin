@@ -14,20 +14,43 @@ from routes.likes import likes_bp
 from routes.ml import ml_bp
 from routes.assistant import assistant_bp
 from routes.follows import follows_bp
+from config import get_config
+
+
+def _ensure_production_requirements(config):
+    if config.get("ENV") != "production":
+        return
+
+    problems = []
+    jwt_secret = config.get("JWT_SECRET_KEY")
+    if not jwt_secret or jwt_secret == "dev-change-me":
+        problems.append("JWT_SECRET_KEY must be set to a strong secret in production.")
+
+    db_uri = config.get("SQLALCHEMY_DATABASE_URI", "")
+    if not db_uri or db_uri.startswith("sqlite"):
+        problems.append("DATABASE_URL must point to a production-grade database (non-SQLite).")
+
+    if problems:
+        raise RuntimeError(
+            "Invalid production configuration:\n- " + "\n- ".join(problems)
+        )
 
 
 def create_app():
     if load_dotenv:
         load_dotenv()
     app = Flask(__name__)
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
-    app.config["JWT_SECRET_KEY"] = "super-secret-change-me"
-    app.config["UPLOAD_FOLDER"] = os.path.join(basedir, "uploads")
+    config_obj = get_config()
+    app.config.from_object(config_obj)
+    _ensure_production_requirements(app.config)
+
+    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     db.init_app(app)
     jwt.init_app(app)
-    CORS(app, origins="http://localhost:5173", supports_credentials=True)
+    origins_env = app.config.get("FRONTEND_ORIGINS", "")
+    allowed_origins = [origin.strip() for origin in origins_env.split(",") if origin.strip()]
+    CORS(app, origins=allowed_origins or ["http://localhost:5173"], supports_credentials=True)
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(posts_bp, url_prefix="/api/posts")
@@ -45,6 +68,7 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    with app.app_context():
-        db.create_all()
-    app.run(debug=True)
+    if app.config.get("ENV") != "production":
+        with app.app_context():
+            db.create_all()
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)), debug=bool(app.config.get("DEBUG")))

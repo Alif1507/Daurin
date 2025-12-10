@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.log
+instance/
+uploads/
+venv/
+.env
+.pytest_cache/
+.mypy_cache/
+.git
+.gitignore
+assistant_history.jsonl

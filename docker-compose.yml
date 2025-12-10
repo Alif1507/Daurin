@@ -1,0 +1,65 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: ./Backend_Daurin
+    container_name: daurin-backend
+    env_file:
+      - ./Backend_Daurin/.env
+    volumes:
+      - ./Backend_Daurin/uploads:/app/uploads
+      - ./Backend_Daurin/assistant_history.jsonl:/app/assistant_history.jsonl
+    ports:
+      - "5000:5000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./Frontend_Daurin
+      args:
+        VITE_API_BASE: http://localhost:5000/api
+    container_name: daurin-frontend
+    ports:
+      - "4173:80"
+    depends_on:
+      - backend
+      - mysql
+
+  mysql:
+    image: mysql:8.0
+    container_name: daurin-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: supersecret-root
+      MYSQL_DATABASE: daurin
+      MYSQL_USER: daurin
+      MYSQL_PASSWORD: daurinpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:5.2
+    container_name: daurin-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: daurin
+      PMA_PASSWORD: daurinpass
+    ports:
+      - "8080:80"
+    depends_on:
+      - mysql
+
+volumes:
+  mysql-data:

@@ -1,5 +1,6 @@
 import React from 'react'
 import Marquee from "react-fast-marquee";
+import { Link } from 'react-router';
 
 const LihatKarya = () => {
   return (
@@ -60,8 +61,8 @@ const LihatKarya = () => {
         </Marquee>
       </div>
       
-      {/* Button */}
-      <button className='
+      <Link to="/dashboard">
+        <button className='
         text-lg sm:text-xl md:text-2xl 
         toggleButton toggleTextButton 
         mx-auto md:ml-[100px] md:mr-auto
@@ -74,6 +75,8 @@ const LihatKarya = () => {
       '>
         Tunjukan Karyamu!
       </button>
+      </Link>
+      
     </section>
   )
 }
