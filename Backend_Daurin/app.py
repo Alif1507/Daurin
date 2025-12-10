@@ -15,6 +15,7 @@ from routes.ml import ml_bp
 from routes.assistant import assistant_bp
 from routes.follows import follows_bp
 
+
 def create_app():
     if load_dotenv:
         load_dotenv()
